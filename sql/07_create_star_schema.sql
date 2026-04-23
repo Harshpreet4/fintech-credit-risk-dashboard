@@ -149,16 +149,23 @@ GO
 -- DISTINCT ensures one row per customer even if they have
 -- multiple loans in the dataset
 INSERT INTO dim_customer (customer_id, customer_name, age, gender, city)
-SELECT DISTINCT
+SELECT
     customer_id,
     customer_name,
     age,
     gender,
     city
-FROM loan_data_staging;
-GO
-
-SELECT COUNT(*) AS dim_customer_count FROM dim_customer;
+FROM (
+    SELECT
+        customer_id,
+        customer_name,
+        age,
+        gender,
+        city,
+        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY loan_id) AS rn
+    FROM loan_data_staging
+) ranked
+WHERE rn = 1;
 GO
 
 -- ── Populate dim_product ─────────────────────────────────────────
